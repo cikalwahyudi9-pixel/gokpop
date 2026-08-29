@@ -1,0 +1,115 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { collection, query, orderBy, onSnapshot, doc, writeBatch, getDocs, where } from 'firebase/firestore'
+import { useTranslation } from 'react-i18next'
+import { db } from '../lib/firebase'
+import { useAuth } from '../contexts/AuthContext'
+import BottomNav from '../components/BottomNav'
+import { Bell, Check } from 'lucide-react'
+
+export default function NotificationsPage() {
+  const { user } = useAuth()
+  const { t }    = useTranslation()
+  const navigate = useNavigate()
+
+  const [notifs, setNotifs] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) return
+    const q = query(
+      collection(db, 'notifications', user.uid, 'items'),
+      orderBy('createdAt', 'desc')
+    )
+    const unsub = onSnapshot(q, snap => {
+      setNotifs(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setLoading(false)
+    })
+    return unsub
+  }, [user])
+
+  async function markAllRead() {
+    const batch = writeBatch(db)
+    const unread = notifs.filter(n => !n.read)
+    unread.forEach(n => {
+      batch.update(doc(db, 'notifications', user.uid, 'items', n.id), { read: true })
+    })
+    await batch.commit()
+  }
+
+  const unreadCount = notifs.filter(n => !n.read).length
+
+  return (
+    <div style={{ background: 'var(--color-surface)', minHeight: '100dvh' }}>
+      <div className="page-header">
+        <h1 style={{ fontSize: '1.125rem', flex: 1 }}>{t('notif_title')}</h1>
+        {unreadCount > 0 && (
+          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-primary)' }} onClick={markAllRead}>
+            <Check size={14} /> {t('mark_all_read')}
+          </button>
+        )}
+      </div>
+
+      <div className="page" style={{ paddingTop: 'var(--space-4)' }}>
+        {loading ? (
+          <p className="text-secondary text-sm" style={{ textAlign: 'center', paddingTop: 'var(--space-8)' }}>Memuat...</p>
+        ) : notifs.length === 0 ? (
+          <div style={{ textAlign: 'center', paddingTop: 'var(--space-12)' }}>
+            <Bell size={40} style={{ color: 'var(--color-text-disabled)', margin: '0 auto var(--space-3)' }} />
+            <p className="text-secondary">{t('notif_empty')}</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            {notifs.map(n => <NotifItem key={n.id} notif={n} navigate={navigate} />)}
+          </div>
+        )}
+      </div>
+
+      <BottomNav />
+    </div>
+  )
+}
+
+const TYPE_ICONS = {
+  deadline:      '⏰',
+  status_update: '📦',
+  announcement:  '📢',
+  war:           '⚔️',
+  claim_success: '✅',
+  claim_failed:  '❌',
+  cancelled:     '🚫',
+}
+
+function NotifItem({ notif, navigate }) {
+  const date = notif.createdAt?.toDate ? notif.createdAt.toDate() : new Date()
+
+  return (
+    <div
+      className="card"
+      style={{
+        background: notif.read ? 'var(--color-bg)' : 'var(--color-primary-light)',
+        borderColor: notif.read ? 'var(--color-border)' : 'var(--color-primary-subtle)',
+        cursor: notif.goId ? 'pointer' : 'default',
+      }}
+      onClick={() => notif.goId && navigate(`/go/${notif.goId}`)}
+    >
+      <div className="flex gap-3">
+        <div style={{ fontSize: '1.25rem', flexShrink: 0, lineHeight: 1.5 }}>
+          {TYPE_ICONS[notif.type] || '🔔'}
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontWeight: notif.read ? 500 : 700, fontSize: '0.9375rem', marginBottom: 2 }}>
+            {notif.title}
+          </p>
+          <p className="text-sm text-secondary">{notif.body}</p>
+          <p className="text-xs text-secondary" style={{ marginTop: 6 }}>
+            {date.toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+        {!notif.read && (
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-primary)', flexShrink: 0, marginTop: 6 }} />
+        )}
+      </div>
+    </div>
+  )
+}

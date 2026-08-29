@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper functions ───────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isGOM(goId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/group_orders/$(goId)).data.createdBy == request.auth.uid;
+    }
+
+    // ─── Users ──────────────────────────────
+    match /users/{uid} {
+      allow read:  if isSignedIn();
+      allow create: if isSignedIn();
+      // Only owner can update everything. Others can ONLY update ratings when submitting a review.
+      allow update: if isOwner(uid) || 
+                   (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avgRating', 'reviewCount']));
+      allow delete: if isOwner(uid);
+
+      // Reviews sub-collection
+      match /reviews/{reviewId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn();
+      }
+    }
+
+    // ─── Group Orders ────────────────────────
+    match /group_orders/{goId} {
+      // Anyone signed in can read active GO
+      allow read:   if isSignedIn();
+      // Only GO creator (GOM) can create/update
+      allow create: if isSignedIn();
+      // GOM can update everything. Participants can update slots when joining (MVP shortcut).
+      allow update: if isSignedIn(); 
+      allow delete: if isGOM(goId);
+
+      // ─── Participants ────────────────────
+      match /participants/{participantId} {
+        // resource.data.uid is the user's ID
+        allow read:   if isSignedIn(); // GOM and other participants might need to see counts/status
+        allow create: if isSignedIn();
+        allow update: if isSignedIn() && (resource.data.uid == request.auth.uid || isGOM(goId));
+        allow delete: if isGOM(goId);
+      }
+
+      // ─── Discussions ─────────────────────
+      match /discussions/{msgId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn();
+      }
+
+      // ─── War Claims ──────────────────────
+      match /war_claims/{claimId} {
+        allow read:   if isSignedIn();
+        allow create: if isSignedIn();
+        allow update: if false; // Immutable
+        allow delete: if false;
+      }
+    }
+
+    // ─── Notifications ───────────────────────
+    match /notifications/{uid}/items/{notifId} {
+      allow read:   if isOwner(uid);
+      allow update: if isOwner(uid); // For marking as read
+      // Allowing any signed in user to create notifications (e.g. follow artist trigger)
+      allow create: if isSignedIn(); 
+      allow delete: if isOwner(uid);
+    }
+  }
+}
