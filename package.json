@@ -17,6 +17,7 @@
     "@radix-ui/react-tabs": "^1.1.21",
     "@radix-ui/react-toast": "^1.2.23",
     "firebase": "^12.18.0",
+    "firebase-admin": "^13.10.0",
     "i18next": "^26.4.0",
     "lucide-react": "^1.37.0",
     "react": "^19.2.8",

@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next'
 import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
 import BottomNav from '../components/BottomNav'
-import { Bell, Check, Trash2 } from 'lucide-react'
+import { Bell, Check, Trash2, Smartphone } from 'lucide-react'
+import { getToken } from 'firebase/messaging'
+import { getMessagingInstance, VAPID_KEY } from '../lib/firebase'
 
 export default function NotificationsPage() {
   const { user } = useAuth()
@@ -14,6 +16,8 @@ export default function NotificationsPage() {
 
   const [notifs, setNotifs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [fcmEnabled, setFcmEnabled] = useState(false)
+  const [fcmLoading, setFcmLoading] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -38,13 +42,50 @@ export default function NotificationsPage() {
   }
 
   async function deleteNotif(id) {
-    // We cannot use delete in batch easily if we just delete directly, but we can do a simple fetch. 
-    // Actually, deleteDoc is best.
     try {
       const { deleteDoc } = await import('firebase/firestore')
       await deleteDoc(doc(db, 'notifications', user.uid, 'items', id))
     } catch (err) {
       console.error(err)
+    }
+  }
+
+  async function enablePushNotifications() {
+    try {
+      setFcmLoading(true)
+      const messaging = await getMessagingInstance()
+      if (!messaging) {
+        alert('Browser Anda tidak mendukung push notification.')
+        return
+      }
+
+      // Request permission
+      const permission = await Notification.requestPermission()
+      if (permission === 'granted') {
+        // Register SW with URL params for config
+        const registration = await navigator.serviceWorker.register(
+          `/firebase-messaging-sw.js?apiKey=${import.meta.env.VITE_FIREBASE_API_KEY}&projectId=${import.meta.env.VITE_FIREBASE_PROJECT_ID}&messagingSenderId=${import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID}&appId=${import.meta.env.VITE_FIREBASE_APP_ID}`
+        )
+        
+        const token = await getToken(messaging, { 
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: registration 
+        })
+        
+        if (token) {
+          const { setDoc } = await import('firebase/firestore')
+          await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true })
+          setFcmEnabled(true)
+          alert('Berhasil! Anda akan menerima pop-up notifikasi.')
+        }
+      } else {
+        alert('Anda memblokir izin notifikasi di browser ini.')
+      }
+    } catch (error) {
+      console.error('FCM Error:', error)
+      alert('Gagal mengaktifkan notifikasi: ' + error.message)
+    } finally {
+      setFcmLoading(false)
     }
   }
 
@@ -62,6 +103,22 @@ export default function NotificationsPage() {
       </div>
 
       <div className="page" style={{ paddingTop: 'var(--space-4)' }}>
+        
+        {!fcmEnabled && (
+          <div className="card" style={{ marginBottom: 'var(--space-4)', background: 'var(--color-primary-light)', border: '1px solid var(--color-primary-subtle)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <div style={{ background: '#fff', padding: 8, borderRadius: '50%' }}>
+              <Smartphone size={20} style={{ color: 'var(--color-primary)' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ fontSize: '0.875rem', marginBottom: 2 }}>Aktifkan Pop-up</h3>
+              <p className="text-xs text-secondary">Terima notifikasi meski aplikasi ditutup.</p>
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={enablePushNotifications} disabled={fcmLoading}>
+              {fcmLoading ? '...' : 'Aktifkan'}
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <p className="text-secondary text-sm" style={{ textAlign: 'center', paddingTop: 'var(--space-8)' }}>Memuat...</p>
         ) : notifs.length === 0 ? (

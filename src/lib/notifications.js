@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore'
 import { db } from './firebase'
 
 /**
@@ -15,12 +15,30 @@ export async function createNotification(userId, payload) {
   if (!userId) return
 
   try {
-    const notifRef = collection(db, 'notifications', userId, 'items')
-    await addDoc(notifRef, {
+    // 1. Save locally to Firestore
+    await addDoc(collection(db, 'notifications', userId, 'items'), {
       ...payload,
       read: false,
       createdAt: serverTimestamp()
     })
+
+    // 2. Fetch user's FCM token to send Push Notification via Vercel API
+    const userDoc = await getDoc(doc(db, 'users', userId))
+    if (userDoc.exists()) {
+      const userData = userDoc.data()
+      if (userData.fcmToken) {
+        fetch('/api/send-push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: userData.fcmToken,
+            title: payload.title,
+            body: payload.body,
+            goId: payload.goId
+          })
+        }).catch(err => console.error('Failed to trigger push API:', err))
+      }
+    }
   } catch (error) {
     console.error('Gagal mengirim notifikasi:', error)
   }
