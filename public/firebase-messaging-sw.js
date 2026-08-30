@@ -26,7 +26,6 @@ try {
     const notificationTitle = payload.notification?.title || payload.data?.title || 'Notifikasi'
     const notificationOptions = {
       body: payload.notification?.body || payload.data?.body || 'Ada pesan baru.',
-      icon: '/pwa-192x192.png',
       data: payload.data
     }
 
