@@ -38,12 +38,17 @@ export async function createNotification(userId, payload) {
           })
         })
         .then(async (res) => {
+          const result = await res.json()
           if (!res.ok) {
-            const err = await res.json()
-            alert(`[DEBUG] Push API Error: ${err.error || res.statusText}`)
+            console.error('[Push API Error]', result.error)
+          } else if (result.reason === 'token_expired') {
+            // Token hangus - hapus dari Firestore agar UI tampilkan tombol Aktifkan lagi
+            const { updateDoc, doc: firestoreDoc } = await import('firebase/firestore')
+            const { db: firestoreDb } = await import('./firebase')
+            await updateDoc(firestoreDoc(firestoreDb, 'users', userId), { fcmToken: null })
           }
         })
-        .catch(err => alert(`[DEBUG] Push API Fetch Failed: ${err.message}`))
+        .catch(err => console.error('Push fetch error:', err))
       }
     }
   } catch (error) {
