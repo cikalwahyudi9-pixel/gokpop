@@ -361,6 +361,16 @@ function ParticipantCard({ participant: p, onStatusChange, onCancel, t }) {
             ))}
           </div>
 
+          {/* Shipping Address */}
+          {p.shippingAddress && (
+            <div style={{ marginBottom: 'var(--space-3)' }}>
+              <p className="text-xs text-secondary" style={{ marginBottom: 4 }}>Alamat Pengiriman:</p>
+              <div style={{ padding: 'var(--space-2)', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontSize: '0.875rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {p.shippingAddress}
+              </div>
+            </div>
+          )}
+
           {/* Payment proof */}
           {p.paymentProofUrl && (
             <div style={{ marginBottom: 'var(--space-3)' }}>

@@ -14,6 +14,7 @@ export default function CartPage() {
   const navigate = useNavigate()
   const [checkingOut, setCheckingOut] = useState(false)
   const [error, setError] = useState('')
+  const [addresses, setAddresses] = useState({})
 
   // Group cart items by GOM
   const groupedCart = cart.reduce((acc, item) => {
@@ -27,7 +28,14 @@ export default function CartPage() {
 
   async function handleCheckout(gomUid) {
     const gomCart = groupedCart[gomUid]
+    const address = addresses[gomUid]?.trim()
+    
     if (!gomCart || gomCart.items.length === 0) return
+    
+    if (!address) {
+      setError(`Mohon isi alamat pengiriman untuk pesanan dari ${gomCart.gomName}`)
+      return
+    }
 
     setCheckingOut(true)
     setError('')
@@ -64,6 +72,7 @@ export default function CartPage() {
             paymentDeadline,
             joinedAt: serverTimestamp(),
             paymentProofUrl: null,
+            shippingAddress: address,
           })
 
           // Deduct slots (we don't deduct stock here to keep it simple, but we deduct slots)
@@ -131,6 +140,18 @@ export default function CartPage() {
                     </button>
                   </div>
                 ))}
+              </div>
+
+              <div style={{ padding: 'var(--space-3)', borderTop: '1px solid var(--color-border)' }}>
+                <label style={{ display: 'block', marginBottom: 'var(--space-2)', fontSize: '0.875rem', fontWeight: 600 }}>Alamat Pengiriman</label>
+                <textarea 
+                  className="input" 
+                  rows={3} 
+                  placeholder="Jalan, RT/RW, Kecamatan, Kota, Kode Pos..." 
+                  value={addresses[gomUid] || ''}
+                  onChange={(e) => setAddresses(prev => ({ ...prev, [gomUid]: e.target.value }))}
+                  style={{ resize: 'none', marginBottom: 0 }}
+                />
               </div>
 
               <div style={{ padding: 'var(--space-3)', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
