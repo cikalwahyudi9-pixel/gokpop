@@ -73,8 +73,9 @@ export default function NotificationsPage() {
       // Request permission
       const permission = await Notification.requestPermission()
       if (permission === 'granted') {
-        // Register SW with URL params for config
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        // Register SW dan tunggu sampai benar-benar aktif
+        await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        const registration = await navigator.serviceWorker.ready
         
         const token = await getToken(messaging, { 
           vapidKey: VAPID_KEY,
