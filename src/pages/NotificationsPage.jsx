@@ -64,41 +64,54 @@ export default function NotificationsPage() {
   async function enablePushNotifications() {
     try {
       setFcmLoading(true)
+      
+      // STEP 1
+      alert('🔵 STEP 1: Memeriksa dukungan browser...')
       const messaging = await getMessagingInstance()
       if (!messaging) {
-        alert('Browser Anda tidak mendukung push notification.')
+        alert('❌ Browser tidak mendukung push notification.')
         return
       }
 
-      // Request permission
+      // STEP 2
+      alert('🔵 STEP 2: Meminta izin notifikasi...')
       const permission = await Notification.requestPermission()
-      if (permission === 'granted') {
-        // Register SW dan tunggu sampai benar-benar aktif
-        await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-        const registration = await navigator.serviceWorker.ready
-        
-        const token = await getToken(messaging, { 
-          vapidKey: VAPID_KEY,
-          serviceWorkerRegistration: registration 
-        })
-        
-        if (token) {
-          const { setDoc } = await import('firebase/firestore')
-          await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true })
-          
-          // Send a test notification immediately
-          const { createNotification } = await import('../lib/notifications')
-          await createNotification(user.uid, {
-            type: 'announcement',
-            title: 'Notifikasi Aktif! 🎉',
-            body: 'Selamat! HP Anda sekarang akan menerima pop-up otomatis saat ada pembaruan transaksi.'
-          })
+      if (permission !== 'granted') {
+        alert('❌ Izin ditolak: ' + permission)
+        return
+      }
+      alert('✅ STEP 2: Izin diterima!')
 
-          setFcmEnabled(true)
-          alert('Berhasil! Sistem baru saja menguji mengirim satu notifikasi ke Anda.')
-        }
+      // STEP 3
+      alert('🔵 STEP 3: Mendaftarkan Service Worker...')
+      await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+      const registration = await navigator.serviceWorker.ready
+      alert('✅ STEP 3: SW aktif! State: ' + registration.active?.state)
+
+      // STEP 4
+      alert(`🔵 STEP 4: Mendapatkan FCM token... VAPID: ${VAPID_KEY ? VAPID_KEY.substring(0, 20) + '...' : 'KOSONG!'}`)
+      const token = await getToken(messaging, { 
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: registration 
+      })
+      
+      if (token) {
+        alert('✅ STEP 4: Token didapat! ' + token.substring(0, 20) + '...')
+        const { setDoc } = await import('firebase/firestore')
+        await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true })
+        alert('✅ STEP 5: Token disimpan ke database!')
+        
+        const { createNotification } = await import('../lib/notifications')
+        await createNotification(user.uid, {
+          type: 'announcement',
+          title: 'Notifikasi Aktif! 🎉',
+          body: 'Selamat! HP Anda sekarang akan menerima pop-up otomatis saat ada pembaruan transaksi.'
+        })
+
+        setFcmEnabled(true)
+        alert('✅ SELESAI: Test notifikasi dikirim. Minimize app dan lihat apakah pop-up muncul!')
       } else {
-        alert('Anda memblokir izin notifikasi di browser ini.')
+        alert('❌ STEP 4: Token KOSONG! Kemungkinan VAPID key salah di Vercel.')
       }
     } catch (error) {
       console.error('FCM Error:', error)
