@@ -25,7 +25,13 @@ export function AuthProvider({ children }) {
             const { getToken } = await import('firebase/messaging')
             const messaging = await getMessagingInstance()
             if (messaging) {
-              const token = await getToken(messaging, { vapidKey: VAPID_KEY })
+              const registration = await navigator.serviceWorker.register(
+                `/firebase-messaging-sw.js?apiKey=${import.meta.env.VITE_FIREBASE_API_KEY}&projectId=${import.meta.env.VITE_FIREBASE_PROJECT_ID}&messagingSenderId=${import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID}&appId=${import.meta.env.VITE_FIREBASE_APP_ID}`
+              )
+              const token = await getToken(messaging, { 
+                vapidKey: VAPID_KEY,
+                serviceWorkerRegistration: registration
+              })
               if (token) {
                 await setDoc(doc(db, 'users', firebaseUser.uid), { fcmToken: token }, { merge: true })
               }
