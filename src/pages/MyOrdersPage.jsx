@@ -113,9 +113,13 @@ export default function MyOrdersPage() {
     if (!reviewOrder || rating < 1) return
     setSubmittingReview(true)
     try {
-      const gomUid = reviewOrder.goCreatedBy
-      if (!gomUid) throw new Error('GOM tidak ditemukan')
-
+      let gomUid = reviewOrder.goCreatedBy
+      if (!gomUid) {
+        const { getDoc } = await import('firebase/firestore')
+        const goSnap = await getDoc(doc(db, 'group_orders', reviewOrder.goId))
+        gomUid = goSnap.data()?.createdBy
+        if (!gomUid) throw new Error('GOM tidak ditemukan')
+      }
       await runTransaction(db, async (tx) => {
         const pRef = doc(db, 'group_orders', reviewOrder.goId, 'participants', reviewOrder.id)
         const pSnap = await tx.get(pRef)

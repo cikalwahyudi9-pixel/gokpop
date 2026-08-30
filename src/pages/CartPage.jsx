@@ -68,6 +68,7 @@ export default function CartPage() {
             items: go.items,
             totalAmount: go.totalAmount,
             goName: go.goName,
+            goCreatedBy: gomUid,
             orderStatus: 'menunggu_pembayaran',
             paymentDeadline,
             joinedAt: serverTimestamp(),
