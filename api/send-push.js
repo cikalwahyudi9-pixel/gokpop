@@ -41,6 +41,9 @@ export default async function handler(req, res) {
       data: {
         goId: goId || '',
         url: goId ? `/go/${goId}` : '/'
+      },
+      android: {
+        priority: 'high'
       }
     }
 
