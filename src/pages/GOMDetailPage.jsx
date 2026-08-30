@@ -255,7 +255,7 @@ export default function GOMDetailPage() {
               <ParticipantCard
                 key={p.id}
                 participant={p}
-                onStatusChange={(newStatus) => handleStatusChange(p.id, newStatus)}
+                onStatusChange={(newStatus) => updateStatus(p.id, newStatus)}
                 onCancel={handleCancelOrder}
                 t={t}
               />
