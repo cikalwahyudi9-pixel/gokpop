@@ -17,41 +17,6 @@ export function AuthProvider({ children }) {
         setUser(firebaseUser)
         const profileData = await fetchOrCreateProfile(firebaseUser)
         setProfile(profileData)
-
-        // Silently update FCM token if permission is already granted
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          try {
-            const { getMessagingInstance, VAPID_KEY } = await import('../lib/firebase')
-            const { getToken } = await import('firebase/messaging')
-            const messaging = await getMessagingInstance()
-            if (messaging) {
-              const fbReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-              const activeReg = await new Promise((resolve) => {
-                if (fbReg.active) {
-                  resolve(fbReg)
-                } else {
-                  const worker = fbReg.installing || fbReg.waiting
-                  if (worker) {
-                    worker.addEventListener('statechange', function () {
-                      if (this.state === 'activated') resolve(fbReg)
-                    })
-                  } else {
-                    resolve(fbReg)
-                  }
-                }
-              })
-              const token = await getToken(messaging, { 
-                vapidKey: VAPID_KEY,
-                serviceWorkerRegistration: activeReg
-              })
-              if (token) {
-                await setDoc(doc(db, 'users', firebaseUser.uid), { fcmToken: token }, { merge: true })
-              }
-            }
-          } catch (err) {
-            console.error('Failed to silently register FCM token:', err)
-          }
-        }
       } else {
         setUser(null)
         setProfile(null)

@@ -16,10 +16,22 @@ export default function NotificationsPage() {
 
   const [notifs, setNotifs] = useState([])
   const [loading, setLoading] = useState(true)
-  const [fcmEnabled, setFcmEnabled] = useState(
-    typeof Notification !== 'undefined' && Notification.permission === 'granted'
-  )
+  const [fcmEnabled, setFcmEnabled] = useState(false)
   const [fcmLoading, setFcmLoading] = useState(false)
+
+  // Cek status FCM: harus ada izin browser DAN token tersimpan di DB
+  useEffect(() => {
+    if (!user) return
+    const permGranted = typeof Notification !== 'undefined' && Notification.permission === 'granted'
+    if (!permGranted) { setFcmEnabled(false); return }
+
+    // Cek apakah token masih ada di Firestore
+    import('firebase/firestore').then(({ getDoc, doc: firestoreDoc }) => {
+      getDoc(firestoreDoc(db, 'users', user.uid)).then(snap => {
+        setFcmEnabled(!!(snap.exists() && snap.data()?.fcmToken))
+      })
+    })
+  }, [user])
 
   useEffect(() => {
     if (!user) return
