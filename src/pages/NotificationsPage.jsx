@@ -75,8 +75,17 @@ export default function NotificationsPage() {
         if (token) {
           const { setDoc } = await import('firebase/firestore')
           await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true })
+          
+          // Send a test notification immediately
+          const { createNotification } = await import('../lib/notifications')
+          await createNotification(user.uid, {
+            type: 'announcement',
+            title: 'Notifikasi Aktif! 🎉',
+            body: 'Selamat! HP Anda sekarang akan menerima pop-up otomatis saat ada pembaruan transaksi.'
+          })
+
           setFcmEnabled(true)
-          alert('Berhasil! Anda akan menerima pop-up notifikasi.')
+          alert('Berhasil! Sistem baru saja menguji mengirim satu notifikasi ke Anda.')
         }
       } else {
         alert('Anda memblokir izin notifikasi di browser ini.')
