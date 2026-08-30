@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore'
 import { useTranslation } from 'react-i18next'
 import { db } from '../lib/firebase'
+import { uploadImage } from '../lib/upload'
 import { createNotification } from '../lib/notifications'
 import { useAuth } from '../contexts/AuthContext'
 import { ArrowLeft, Plus, Trash2, Calculator } from 'lucide-react'
@@ -11,6 +12,44 @@ const SHIPPING_RATE_PER_100G = 5000 // Rp 5.000 per 100g estimasi
 
 function calcFinalPrice(basePrice, shippingEstimate) {
   return (parseFloat(basePrice) || 0) + (parseFloat(shippingEstimate) || 0)
+}
+
+function ItemRow({ item, idx, onUpdate, onRemove, canRemove, t }) {
+  return (
+    <div style={{ border: '1px solid var(--color-border)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
+      {canRemove && (
+        <button type="button" onClick={onRemove} style={{ position: 'absolute', top: 8, right: 8, color: 'var(--color-danger)' }}>
+          <Trash2 size={16} />
+        </button>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        <div className="input-group">
+          <label className="input-label">Nama Item {idx + 1}</label>
+          <input className="input" placeholder="cth: Photocards Set" value={item.name} onChange={e => onUpdate('name', e.target.value)} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+          <div className="input-group">
+            <label className="input-label">Harga (Rp)</label>
+            <input className="input" type="number" placeholder="150000" value={item.price} onChange={e => onUpdate('price', e.target.value)} />
+          </div>
+          <div className="input-group">
+            <label className="input-label">Stok</label>
+            <input className="input" type="number" placeholder="10" value={item.stock} onChange={e => onUpdate('stock', e.target.value)} />
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+          <div className="input-group">
+            <label className="input-label">Estimasi Ongkir (Rp)</label>
+            <input className="input" type="number" placeholder="20000" value={item.shippingEstimate} onChange={e => onUpdate('shippingEstimate', e.target.value)} />
+          </div>
+          <div className="input-group">
+            <label className="input-label">Harga Total (Rp)</label>
+            <input className="input" disabled value={item.finalPrice.toLocaleString()} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function CreateGOPage() {
@@ -27,7 +66,12 @@ export default function CreateGOPage() {
     deadline: '',
     quota: '',
     description: '',
+    qrisUrl: '',
+    bankName: '',
+    bankAccount: '',
   })
+
+  const [uploadingQris, setUploadingQris] = useState(false)
 
   const [items, setItems] = useState([
     { id: 1, name: '', price: '', stock: '', shippingEstimate: '', finalPrice: 0 }
@@ -85,6 +129,9 @@ export default function CreateGOPage() {
         deadline: new Date(form.deadline),
         quota: parseInt(form.quota),
         remainingSlots: parseInt(form.quota),
+        qrisUrl: form.qrisUrl,
+        bankName: form.bankName.trim(),
+        bankAccount: form.bankAccount.trim(),
         status: 'aktif',
         items: items.map(({ id, ...rest }) => ({
           ...rest,
@@ -209,6 +256,48 @@ export default function CreateGOPage() {
                   style={{ resize: 'none' }}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Payment Info */}
+          <div className="card" style={{ marginBottom: 'var(--space-4)' }}>
+            <h2 style={{ fontSize: '0.9375rem', marginBottom: 'var(--space-4)' }}>Metode Pembayaran</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              
+              <div className="input-group">
+                <label className="input-label">Upload QRIS (Opsional)</label>
+                {form.qrisUrl && (
+                  <img src={form.qrisUrl} alt="QRIS" style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-2)' }} />
+                )}
+                <label className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }}>
+                  {uploadingQris ? 'Mengupload...' : (form.qrisUrl ? 'Ganti QRIS' : 'Pilih Gambar QRIS')}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingQris} onChange={async (e) => {
+                    const f = e.target.files?.[0]
+                    if (!f) return
+                    setUploadingQris(true)
+                    try {
+                      const url = await uploadImage(f)
+                      updateForm('qrisUrl', url)
+                    } catch (err) {
+                      alert('Gagal mengupload QRIS')
+                    } finally {
+                      setUploadingQris(false)
+                    }
+                  }} />
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                <div className="input-group">
+                  <label className="input-label">Nama Bank / E-Wallet (Opsional)</label>
+                  <input className="input" placeholder="cth: BCA / Dana" value={form.bankName} onChange={e => updateForm('bankName', e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">No. Rekening (Opsional)</label>
+                  <input className="input" placeholder="cth: 1234567890" value={form.bankAccount} onChange={e => updateForm('bankAccount', e.target.value)} />
+                </div>
+              </div>
+
             </div>
           </div>
 

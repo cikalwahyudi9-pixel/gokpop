@@ -167,38 +167,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* QRIS Upload (GOM only, self) */}
-        {isSelf && shownProfile?.role === 'gom' && (
-          <div className="card" style={{ marginBottom: 'var(--space-4)' }}>
-            <h3 style={{ fontSize: '0.9375rem', marginBottom: 'var(--space-3)' }}>QRIS Pembayaran</h3>
-            {shownProfile?.qrisUrl ? (
-              <div style={{ marginBottom: 'var(--space-3)', textAlign: 'center' }}>
-                <img src={shownProfile.qrisUrl} alt="QRIS" style={{ width: '100%', maxWidth: 200, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }} />
-              </div>
-            ) : (
-              <p className="text-xs text-secondary" style={{ marginBottom: 'var(--space-3)' }}>Upload QRIS Anda agar peserta bisa langsung memindai dan membayar.</p>
-            )}
-            
-            <label className="btn btn-outline btn-full btn-sm" style={{ display: 'flex', gap: 6 }}>
-              {uploadingQris ? 'Mengunggah...' : <><Upload size={14} /> {shownProfile?.qrisUrl ? 'Ubah QRIS' : 'Upload QRIS'}</>}
-              <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingQris} onChange={async (e) => {
-                const f = e.target.files?.[0]
-                if (!f) return
-                setUploadingQris(true)
-                try {
-                  const url = await uploadImage(f)
-                  await updateDoc(doc(db, 'users', user.uid), { qrisUrl: url })
-                  alert('QRIS berhasil diunggah!')
-                  window.location.reload()
-                } catch (err) {
-                  alert('Gagal mengunggah QRIS')
-                } finally {
-                  setUploadingQris(false)
-                }
-              }} />
-            </label>
-          </div>
-        )}
 
         {/* Settings & Tools (Self Only) */}
         {isSelf && (

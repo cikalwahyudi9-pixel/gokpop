@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { useTranslation } from 'react-i18next'
 import { db } from '../lib/firebase'
+import { uploadImage } from '../lib/upload'
 import { useAuth } from '../contexts/AuthContext'
 import { ArrowLeft, Plus, Trash2, Calculator } from 'lucide-react'
 
@@ -32,11 +33,16 @@ export default function EditGOPage() {
   const [form, setForm] = useState({
     name: '',
     artistGroup: '',
+    originCountry: 'Korea',
     deadline: '',
     quota: '',
     description: '',
+    qrisUrl: '',
+    bankName: '',
+    bankAccount: '',
   })
 
+  const [uploadingQris, setUploadingQris] = useState(false)
   const [items, setItems] = useState([])
 
   useEffect(() => {
@@ -54,9 +60,13 @@ export default function EditGOPage() {
         setForm({
           name: data.name || '',
           artistGroup: data.artistGroup || '',
+          originCountry: data.originCountry || 'Korea',
           deadline: data.deadline?.toDate ? toLocalDatetimeString(data.deadline.toDate()) : '',
-          quota: data.quota || '',
+          quota: data.quota?.toString() || '',
           description: data.description || '',
+          qrisUrl: data.qrisUrl || '',
+          bankName: data.bankName || '',
+          bankAccount: data.bankAccount || '',
         })
         
         if (data.items) {
@@ -132,10 +142,14 @@ export default function EditGOPage() {
       await updateDoc(doc(db, 'group_orders', goId), {
         name: form.name.trim(),
         artistGroup: form.artistGroup.trim(),
+        originCountry: form.originCountry,
         description: form.description.trim(),
         deadline: new Date(form.deadline),
         quota: newQuota,
         remainingSlots: newRemainingSlots,
+        qrisUrl: form.qrisUrl,
+        bankName: form.bankName.trim(),
+        bankAccount: form.bankAccount.trim(),
         items: items.map(({ id, ...rest }) => ({
           ...rest,
           price: parseFloat(rest.price),
@@ -199,9 +213,22 @@ export default function EditGOPage() {
                 <input className="input" placeholder="cth: TWICE WITH YOU-TH Album GO" value={form.name} onChange={e => updateForm('name', e.target.value)} />
               </div>
 
-              <div className="input-group">
-                <label className="input-label">{t('artist_group')} <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-                <input className="input" placeholder="cth: TWICE" value={form.artistGroup} onChange={e => updateForm('artistGroup', e.target.value)} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                <div className="input-group">
+                  <label className="input-label">{t('artist_group')} <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                  <input className="input" placeholder="cth: TWICE" value={form.artistGroup} onChange={e => updateForm('artistGroup', e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Asal Negara <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                  <select className="input" value={form.originCountry} onChange={e => updateForm('originCountry', e.target.value)}>
+                    <option value="Korea">Korea</option>
+                    <option value="China">China</option>
+                    <option value="Jepang">Jepang</option>
+                    <option value="Thailand">Thailand</option>
+                    <option value="Filipina">Filipina</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
@@ -226,6 +253,48 @@ export default function EditGOPage() {
                   style={{ resize: 'none' }}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Payment Info */}
+          <div className="card" style={{ marginBottom: 'var(--space-4)' }}>
+            <h2 style={{ fontSize: '0.9375rem', marginBottom: 'var(--space-4)' }}>Metode Pembayaran</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              
+              <div className="input-group">
+                <label className="input-label">Upload QRIS (Opsional)</label>
+                {form.qrisUrl && (
+                  <img src={form.qrisUrl} alt="QRIS" style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-2)' }} />
+                )}
+                <label className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }}>
+                  {uploadingQris ? 'Mengupload...' : (form.qrisUrl ? 'Ganti QRIS' : 'Pilih Gambar QRIS')}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingQris} onChange={async (e) => {
+                    const f = e.target.files?.[0]
+                    if (!f) return
+                    setUploadingQris(true)
+                    try {
+                      const url = await uploadImage(f)
+                      updateForm('qrisUrl', url)
+                    } catch (err) {
+                      alert('Gagal mengupload QRIS')
+                    } finally {
+                      setUploadingQris(false)
+                    }
+                  }} />
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                <div className="input-group">
+                  <label className="input-label">Nama Bank / E-Wallet (Opsional)</label>
+                  <input className="input" placeholder="cth: BCA / Dana" value={form.bankName} onChange={e => updateForm('bankName', e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">No. Rekening (Opsional)</label>
+                  <input className="input" placeholder="cth: 1234567890" value={form.bankAccount} onChange={e => updateForm('bankAccount', e.target.value)} />
+                </div>
+              </div>
+
             </div>
           </div>
 

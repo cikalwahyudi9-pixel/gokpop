@@ -21,6 +21,8 @@ export default function UploadPaymentPage() {
   const [error, setError]     = useState('')
   const [dragging, setDragging] = useState(false)
   const [qrisUrl, setQrisUrl]   = useState(null)
+  const [bankName, setBankName] = useState(null)
+  const [bankAccount, setBankAccount] = useState(null)
   const [gomName, setGomName]   = useState('')
   const inputRef = useRef()
 
@@ -29,14 +31,11 @@ export default function UploadPaymentPage() {
       try {
         const goSnap = await getDoc(doc(db, 'group_orders', goId))
         if (goSnap.exists()) {
-          setGomName(goSnap.data().gomName || 'GOM')
-          const createdBy = goSnap.data().createdBy
-          if (createdBy) {
-            const userSnap = await getDoc(doc(db, 'users', createdBy))
-            if (userSnap.exists()) {
-              setQrisUrl(userSnap.data().qrisUrl || null)
-            }
-          }
+          const data = goSnap.data()
+          setGomName(data.gomName || 'GOM')
+          setQrisUrl(data.qrisUrl || null)
+          setBankName(data.bankName || null)
+          setBankAccount(data.bankAccount || null)
         }
       } catch (err) {
         console.error('Error loading QRIS:', err)
@@ -113,6 +112,24 @@ export default function UploadPaymentPage() {
                 <h2 style={{ fontSize: '1rem', marginBottom: 'var(--space-2)' }}>Bayar Instan dengan QRIS</h2>
                 <p className="text-sm text-secondary" style={{ marginBottom: 'var(--space-3)' }}>Scan QRIS {gomName} di bawah ini untuk membayar.</p>
                 <img src={qrisUrl} alt="QRIS GOM" style={{ width: '100%', maxWidth: 250, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }} />
+              </div>
+            )}
+
+            {(bankName || bankAccount) && (
+              <div className="card" style={{ marginBottom: 'var(--space-4)' }}>
+                <h2 style={{ fontSize: '0.9375rem', marginBottom: 'var(--space-3)' }}>Transfer Bank / E-Wallet</h2>
+                {bankName && <p className="text-sm"><strong>Bank/Wallet:</strong> {bankName}</p>}
+                {bankAccount && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                    <p className="text-sm" style={{ fontFamily: 'monospace', fontSize: '1.1rem' }}>{bankAccount}</p>
+                    <button 
+                      className="btn btn-outline btn-sm" 
+                      onClick={() => { navigator.clipboard.writeText(bankAccount); alert('No rekening disalin!') }}
+                    >
+                      Salin
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
