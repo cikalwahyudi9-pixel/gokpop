@@ -32,18 +32,30 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'FCM token is required' })
     }
 
+    const link = goId 
+      ? `https://gokpop.vercel.app/go/${goId}` 
+      : 'https://gokpop.vercel.app/'
+
     const payload = {
       token: token,
-      notification: {
-        title: title || 'Notifikasi Baru',
-        body: body || 'Ada pembaruan untuk Anda.',
-      },
-      data: {
-        goId: goId || '',
-        url: goId ? `/go/${goId}` : '/'
-      },
-      android: {
-        priority: 'high'
+      // webpush field specifically targets web/PWA browsers
+      webpush: {
+        notification: {
+          title: title || 'Notifikasi Baru',
+          body: body || 'Ada pembaruan untuk Anda.',
+          icon: 'https://gokpop.vercel.app/favicon.svg',
+          badge: 'https://gokpop.vercel.app/favicon.svg',
+          tag: 'gokpop-notif',
+          renotify: true,
+          requireInteraction: false,
+        },
+        data: {
+          goId: goId || '',
+          url: link
+        },
+        fcmOptions: {
+          link: link
+        }
       }
     }
 
