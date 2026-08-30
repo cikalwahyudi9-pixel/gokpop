@@ -84,8 +84,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AutoFCMRegister />
         <CartProvider>
+          <AutoFCMRegister />
           <Suspense fallback={<PageFallback />}>
             <Routes>
               {/* Public */}
