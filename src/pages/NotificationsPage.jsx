@@ -43,6 +43,15 @@ export default function NotificationsPage() {
     await batch.commit()
   }
 
+  async function markAsRead(id) {
+    try {
+      const { updateDoc } = await import('firebase/firestore')
+      await updateDoc(doc(db, 'notifications', user.uid, 'items', id), { read: true })
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   async function deleteNotif(id) {
     try {
       const { deleteDoc } = await import('firebase/firestore')
@@ -139,7 +148,7 @@ export default function NotificationsPage() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {notifs.map(n => <NotifItem key={n.id} notif={n} navigate={navigate} onDelete={() => deleteNotif(n.id)} />)}
+            {notifs.map(n => <NotifItem key={n.id} notif={n} navigate={navigate} onRead={() => !n.read && markAsRead(n.id)} onDelete={() => deleteNotif(n.id)} />)}
           </div>
         )}
       </div>
@@ -159,7 +168,7 @@ const TYPE_ICONS = {
   cancelled:     '🚫',
 }
 
-function NotifItem({ notif, navigate, onDelete }) {
+function NotifItem({ notif, navigate, onRead, onDelete }) {
   const date = notif.createdAt?.toDate ? notif.createdAt.toDate() : new Date()
 
   return (
@@ -178,7 +187,14 @@ function NotifItem({ notif, navigate, onDelete }) {
         <Trash2 size={14} />
       </button>
 
-      <div className="flex gap-3" style={{ cursor: notif.goId ? 'pointer' : 'default', paddingRight: 20 }} onClick={() => notif.goId && navigate(`/go/${notif.goId}`)}>
+      <div 
+        className="flex gap-3" 
+        style={{ cursor: notif.goId || !notif.read ? 'pointer' : 'default', paddingRight: 20 }} 
+        onClick={() => {
+          if (!notif.read && onRead) onRead();
+          if (notif.goId) navigate(`/go/${notif.goId}`);
+        }}
+      >
         <div style={{ fontSize: '1.25rem', flexShrink: 0, lineHeight: 1.5 }}>
           {TYPE_ICONS[notif.type] || '🔔'}
         </div>
