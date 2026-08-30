@@ -1,8 +1,9 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import { db } from './lib/firebase'
 import './styles/index.css'
 import './lib/i18n'
 
@@ -33,10 +34,57 @@ function PageFallback() {
   )
 }
 
+// Auto-register FCM token when user is logged in & permission already granted
+function AutoFCMRegister() {
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (!user) return
+    if (typeof Notification === 'undefined') return
+    if (Notification.permission !== 'granted') return
+
+    // Delay 2s to let page and Service Worker fully load
+    const timer = setTimeout(async () => {
+      try {
+        const { getMessagingInstance, VAPID_KEY } = await import('./lib/firebase')
+        const { getToken } = await import('firebase/messaging')
+        const messaging = await getMessagingInstance()
+        if (!messaging) return
+
+        const fbReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        // Wait for SW to be active with 3s timeout
+        await new Promise((resolve) => {
+          if (fbReg.active) { resolve(); return }
+          const sw = fbReg.installing || fbReg.waiting
+          if (sw) {
+            sw.addEventListener('statechange', (e) => {
+              if (e.target.state === 'activated') resolve()
+            })
+          }
+          setTimeout(resolve, 3000)
+        })
+
+        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: fbReg })
+        if (token) {
+          const { doc, setDoc } = await import('firebase/firestore')
+          await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true })
+        }
+      } catch (err) {
+        console.error('Auto FCM registration failed:', err)
+      }
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [user])
+
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <AutoFCMRegister />
         <CartProvider>
           <Suspense fallback={<PageFallback />}>
             <Routes>
