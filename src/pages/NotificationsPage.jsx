@@ -84,15 +84,29 @@ export default function NotificationsPage() {
 
       // STEP 3
       alert('🔵 STEP 3: Mendaftarkan Service Worker...')
-      await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-      const registration = await navigator.serviceWorker.ready
-      alert('✅ STEP 3: SW aktif! State: ' + registration.active?.state)
+      const fbReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+      // Tunggu sampai firebase-messaging-sw.js aktif (bukan sw.js dari VitePWA)
+      const activeReg = await new Promise((resolve) => {
+        if (fbReg.active) {
+          resolve(fbReg)
+        } else {
+          const worker = fbReg.installing || fbReg.waiting
+          if (worker) {
+            worker.addEventListener('statechange', function () {
+              if (this.state === 'activated') resolve(fbReg)
+            })
+          } else {
+            resolve(fbReg)
+          }
+        }
+      })
+      alert('✅ STEP 3: SW aktif! State: ' + activeReg.active?.state)
 
       // STEP 4
       alert(`🔵 STEP 4: Mendapatkan FCM token... VAPID: ${VAPID_KEY ? VAPID_KEY.substring(0, 20) + '...' : 'KOSONG!'}`)
       const token = await getToken(messaging, { 
         vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: registration 
+        serviceWorkerRegistration: activeReg 
       })
       
       if (token) {

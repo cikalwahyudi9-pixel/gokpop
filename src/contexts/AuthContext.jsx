@@ -25,11 +25,24 @@ export function AuthProvider({ children }) {
             const { getToken } = await import('firebase/messaging')
             const messaging = await getMessagingInstance()
             if (messaging) {
-              await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-              const registration = await navigator.serviceWorker.ready
+              const fbReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+              const activeReg = await new Promise((resolve) => {
+                if (fbReg.active) {
+                  resolve(fbReg)
+                } else {
+                  const worker = fbReg.installing || fbReg.waiting
+                  if (worker) {
+                    worker.addEventListener('statechange', function () {
+                      if (this.state === 'activated') resolve(fbReg)
+                    })
+                  } else {
+                    resolve(fbReg)
+                  }
+                }
+              })
               const token = await getToken(messaging, { 
                 vapidKey: VAPID_KEY,
-                serviceWorkerRegistration: registration
+                serviceWorkerRegistration: activeReg
               })
               if (token) {
                 await setDoc(doc(db, 'users', firebaseUser.uid), { fcmToken: token }, { merge: true })
