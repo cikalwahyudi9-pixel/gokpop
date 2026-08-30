@@ -74,9 +74,7 @@ export default function NotificationsPage() {
       const permission = await Notification.requestPermission()
       if (permission === 'granted') {
         // Register SW with URL params for config
-        const registration = await navigator.serviceWorker.register(
-          `/firebase-messaging-sw.js?apiKey=${import.meta.env.VITE_FIREBASE_API_KEY}&projectId=${import.meta.env.VITE_FIREBASE_PROJECT_ID}&messagingSenderId=${import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID}&appId=${import.meta.env.VITE_FIREBASE_APP_ID}`
-        )
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
         
         const token = await getToken(messaging, { 
           vapidKey: VAPID_KEY,

@@ -1,39 +1,32 @@
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js')
 
+// Hardcoded Firebase config for background message handling
+// These are public client-side values, safe to commit
 const firebaseConfig = {
-  apiKey: new URL(location).searchParams.get('apiKey'),
-  projectId: new URL(location).searchParams.get('projectId'),
-  messagingSenderId: new URL(location).searchParams.get('messagingSenderId'),
-  appId: new URL(location).searchParams.get('appId'),
+  apiKey: "AIzaSyCXukXs8ehUdFoc4Vvqc0iksp8S_DfOqlA",
+  authDomain: "gokpop-67f48.firebaseapp.com",
+  projectId: "gokpop-67f48",
+  storageBucket: "gokpop-67f48.firebasestorage.app",
+  messagingSenderId: "722119221539",
+  appId: "1:722119221539:web:ab9720a324353f2964ec96"
 }
 
-if (firebaseConfig.apiKey) {
-  firebase.initializeApp(firebaseConfig)
-} else {
-  // Fallback for some browsers that strip params
-  firebase.initializeApp({
-    messagingSenderId: '123456789'
-  })
-}
+firebase.initializeApp(firebaseConfig)
 
-try {
-  const messaging = firebase.messaging()
-  
-  messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Received background message ', payload)
-    
-    const notificationTitle = payload.notification?.title || payload.data?.title || 'Notifikasi'
-    const notificationOptions = {
-      body: payload.notification?.body || payload.data?.body || 'Ada pesan baru.',
-      data: payload.data
-    }
+const messaging = firebase.messaging()
 
-    self.registration.showNotification(notificationTitle, notificationOptions)
-  })
-} catch (e) {
-  console.log('FCM SW initialization error', e)
-}
+messaging.onBackgroundMessage((payload) => {
+  console.log('[firebase-messaging-sw.js] Background message received:', payload)
+
+  const notificationTitle = payload.notification?.title || payload.data?.title || 'Notifikasi Baru'
+  const notificationOptions = {
+    body: payload.notification?.body || payload.data?.body || 'Ada pesan baru untuk Anda.',
+    data: payload.data || {}
+  }
+
+  self.registration.showNotification(notificationTitle, notificationOptions)
+})
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
