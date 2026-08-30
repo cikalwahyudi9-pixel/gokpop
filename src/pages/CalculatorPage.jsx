@@ -15,6 +15,9 @@ export default function CalculatorPage() {
   const navigate = useNavigate()
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0])
   
+  const [customRate, setCustomRate] = useState(COUNTRIES[0].rate)
+  const [customEmsRate, setCustomEmsRate] = useState(COUNTRIES[0].emsRate)
+  
   const [price, setPrice] = useState('')
   const [weight, setWeight] = useState('')
   const [fee, setFee] = useState('')
@@ -22,10 +25,18 @@ export default function CalculatorPage() {
   const numericPrice = parseFloat(price || '0')
   const numericWeight = parseFloat(weight || '0')
   const numericFee = parseFloat(fee || '0')
+  const activeRate = parseFloat(customRate || '0')
+  const activeEmsRate = parseFloat(customEmsRate || '0')
 
-  const basePriceIdr = numericPrice * selectedCountry.rate
-  const shippingIdr = numericWeight * selectedCountry.emsRate
+  const basePriceIdr = numericPrice * activeRate
+  const shippingIdr = numericWeight * activeEmsRate
   const estimatedTotal = basePriceIdr + shippingIdr + numericFee
+
+  const handleSelectCountry = (country) => {
+    setSelectedCountry(country)
+    setCustomRate(country.rate)
+    setCustomEmsRate(country.emsRate)
+  }
 
   return (
     <div style={{ background: 'var(--color-bg)', minHeight: '100dvh', paddingBottom: 'var(--space-10)' }}>
@@ -44,7 +55,7 @@ export default function CalculatorPage() {
             {COUNTRIES.map(country => (
               <button
                 key={country.id}
-                onClick={() => setSelectedCountry(country)}
+                onClick={() => handleSelectCountry(country)}
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                   padding: '12px 16px',
@@ -61,9 +72,15 @@ export default function CalculatorPage() {
               </button>
             ))}
           </div>
-          <div style={{ marginTop: 'var(--space-3)', padding: 'var(--space-2)', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between' }}>
-            <span className="text-xs text-secondary">Kurs: Rp{selectedCountry.rate}</span>
-            <span className="text-xs text-secondary">EMS+Pajak: Rp{selectedCountry.emsRate}/g</span>
+          <div style={{ marginTop: 'var(--space-3)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label className="input-label" style={{ fontSize: '0.75rem' }}>Kurs Aktual (Rp)</label>
+              <input type="number" className="input" style={{ padding: '6px 12px', fontSize: '0.875rem' }} value={customRate} onChange={(e) => setCustomRate(e.target.value)} />
+            </div>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label className="input-label" style={{ fontSize: '0.75rem' }}>Tarif EMS (Rp/gram)</label>
+              <input type="number" className="input" style={{ padding: '6px 12px', fontSize: '0.875rem' }} value={customEmsRate} onChange={(e) => setCustomEmsRate(e.target.value)} />
+            </div>
           </div>
         </div>
 
