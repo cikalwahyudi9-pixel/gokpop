@@ -65,27 +65,20 @@ export default function NotificationsPage() {
     try {
       setFcmLoading(true)
       
-      // STEP 1
-      alert('🔵 STEP 1: Memeriksa dukungan browser...')
       const messaging = await getMessagingInstance()
       if (!messaging) {
-        alert('❌ Browser tidak mendukung push notification.')
+        alert('Browser Anda tidak mendukung push notification.')
         return
       }
 
-      // STEP 2
-      alert('🔵 STEP 2: Meminta izin notifikasi...')
       const permission = await Notification.requestPermission()
       if (permission !== 'granted') {
-        alert('❌ Izin ditolak: ' + permission)
+        alert('Anda memblokir izin notifikasi di browser ini.')
         return
       }
-      alert('✅ STEP 2: Izin diterima!')
 
-      // STEP 3
-      alert('🔵 STEP 3: Mendaftarkan Service Worker...')
+      // Register firebase SW dan tunggu sampai aktif
       const fbReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-      // Tunggu sampai firebase-messaging-sw.js aktif (bukan sw.js dari VitePWA)
       const activeReg = await new Promise((resolve) => {
         if (fbReg.active) {
           resolve(fbReg)
@@ -100,20 +93,15 @@ export default function NotificationsPage() {
           }
         }
       })
-      alert('✅ STEP 3: SW aktif! State: ' + activeReg.active?.state)
 
-      // STEP 4
-      alert(`🔵 STEP 4: Mendapatkan FCM token... VAPID: ${VAPID_KEY ? VAPID_KEY.substring(0, 20) + '...' : 'KOSONG!'}`)
       const token = await getToken(messaging, { 
         vapidKey: VAPID_KEY,
         serviceWorkerRegistration: activeReg 
       })
       
       if (token) {
-        alert('✅ STEP 4: Token didapat! ' + token.substring(0, 20) + '...')
         const { setDoc } = await import('firebase/firestore')
         await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true })
-        alert('✅ STEP 5: Token disimpan ke database!')
         
         const { createNotification } = await import('../lib/notifications')
         await createNotification(user.uid, {
@@ -123,9 +111,9 @@ export default function NotificationsPage() {
         })
 
         setFcmEnabled(true)
-        alert('✅ SELESAI: Test notifikasi dikirim. Minimize app dan lihat apakah pop-up muncul!')
+        alert('Berhasil! Pop-up notifikasi sekarang aktif di perangkat Anda.')
       } else {
-        alert('❌ STEP 4: Token KOSONG! Kemungkinan VAPID key salah di Vercel.')
+        alert('Gagal mendapatkan token. Pastikan VAPID key sudah dikonfigurasi di Vercel.')
       }
     } catch (error) {
       console.error('FCM Error:', error)
