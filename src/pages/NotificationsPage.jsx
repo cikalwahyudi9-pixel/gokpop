@@ -6,7 +6,7 @@ import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
 import BottomNav from '../components/BottomNav'
 import { Bell, Check, Trash2, Smartphone } from 'lucide-react'
-import { getToken } from 'firebase/messaging'
+import { getToken, deleteToken } from 'firebase/messaging'
 import { getMessagingInstance, VAPID_KEY } from '../lib/firebase'
 
 export default function NotificationsPage() {
@@ -106,6 +106,12 @@ export default function NotificationsPage() {
         }
       })
 
+      try {
+        await deleteToken(messaging)
+      } catch (e) {
+        // Abaikan jika tidak ada token
+      }
+
       const token = await getToken(messaging, { 
         vapidKey: VAPID_KEY,
         serviceWorkerRegistration: activeReg 
@@ -113,7 +119,10 @@ export default function NotificationsPage() {
       
       if (token) {
         const { setDoc } = await import('firebase/firestore')
-        await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true })
+        await setDoc(doc(db, 'users', user.uid), { 
+          fcmToken: token,
+          fcmTokenUpdatedAt: new Date().toISOString()
+        }, { merge: true })
         
         const { createNotification } = await import('../lib/notifications')
         await createNotification(user.uid, {

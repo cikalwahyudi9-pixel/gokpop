@@ -47,7 +47,7 @@ function AutoFCMRegister() {
     const timer = setTimeout(async () => {
       try {
         const { getMessagingInstance, VAPID_KEY } = await import('./lib/firebase')
-        const { getToken } = await import('firebase/messaging')
+        const { getToken, deleteToken } = await import('firebase/messaging')
         const messaging = await getMessagingInstance()
         if (!messaging) return
 
@@ -64,10 +64,14 @@ function AutoFCMRegister() {
           setTimeout(resolve, 3000)
         })
 
+        try { await deleteToken(messaging) } catch (e) { /* ignore */ }
         const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: fbReg })
         if (token) {
           const { doc, setDoc } = await import('firebase/firestore')
-          await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true })
+          await setDoc(doc(db, 'users', user.uid), { 
+            fcmToken: token,
+            fcmTokenUpdatedAt: new Date().toISOString()
+          }, { merge: true })
         }
       } catch (err) {
         console.error('Auto FCM registration failed:', err)
