@@ -1,34 +1,35 @@
-importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js')
-importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js')
+// Raw Web Push Service Worker - tanpa Firebase SDK
+// Lebih sederhana dan lebih reliable di Android PWA
 
-// Hardcoded Firebase config for background message handling
-// These are public client-side values, safe to commit
-const firebaseConfig = {
-  apiKey: "AIzaSyCXukXs8ehUdFoc4Vvqc0iksp8S_DfOqlA",
-  authDomain: "gokpop-67f48.firebaseapp.com",
-  projectId: "gokpop-67f48",
-  storageBucket: "gokpop-67f48.firebasestorage.app",
-  messagingSenderId: "722119221539",
-  appId: "1:722119221539:web:ab9720a324353f2964ec96"
-}
+self.addEventListener('push', function (event) {
+  if (!event.data) return
 
-firebase.initializeApp(firebaseConfig)
+  let title = 'GOKpop'
+  let body = 'Ada pesan baru untuk Anda.'
+  let data = {}
 
-const messaging = firebase.messaging()
-
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Background message received:', payload)
-
-  const notificationTitle = payload.notification?.title || payload.data?.title || 'Notifikasi Baru'
-  const notificationOptions = {
-    body: payload.notification?.body || payload.data?.body || 'Ada pesan baru untuk Anda.',
-    data: payload.data || {}
+  try {
+    const payload = event.data.json()
+    // Firebase sends notification in these formats
+    title = payload.notification?.title || payload.data?.title || title
+    body  = payload.notification?.body  || payload.data?.body  || body
+    data  = payload.data || {}
+  } catch (e) {
+    body = event.data.text()
   }
 
-  self.registration.showNotification(notificationTitle, notificationOptions)
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: body,
+      data: data,
+      badge: '/favicon.svg',
+      tag: 'gokpop-notif',
+      renotify: true
+    })
+  )
 })
 
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', function (event) {
   event.notification.close()
   const urlToOpen = new URL(event.notification.data?.url || '/', self.location.origin).href
 
