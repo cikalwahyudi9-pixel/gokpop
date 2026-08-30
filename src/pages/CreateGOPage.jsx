@@ -14,43 +14,7 @@ function calcFinalPrice(basePrice, shippingEstimate) {
   return (parseFloat(basePrice) || 0) + (parseFloat(shippingEstimate) || 0)
 }
 
-function ItemRow({ item, idx, onUpdate, onRemove, canRemove, t }) {
-  return (
-    <div style={{ border: '1px solid var(--color-border)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
-      {canRemove && (
-        <button type="button" onClick={onRemove} style={{ position: 'absolute', top: 8, right: 8, color: 'var(--color-danger)' }}>
-          <Trash2 size={16} />
-        </button>
-      )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-        <div className="input-group">
-          <label className="input-label">Nama Item {idx + 1}</label>
-          <input className="input" placeholder="cth: Photocards Set" value={item.name} onChange={e => onUpdate('name', e.target.value)} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-          <div className="input-group">
-            <label className="input-label">Harga (Rp)</label>
-            <input className="input" type="number" placeholder="150000" value={item.price} onChange={e => onUpdate('price', e.target.value)} />
-          </div>
-          <div className="input-group">
-            <label className="input-label">Stok</label>
-            <input className="input" type="number" placeholder="10" value={item.stock} onChange={e => onUpdate('stock', e.target.value)} />
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-          <div className="input-group">
-            <label className="input-label">Estimasi Ongkir (Rp)</label>
-            <input className="input" type="number" placeholder="20000" value={item.shippingEstimate} onChange={e => onUpdate('shippingEstimate', e.target.value)} />
-          </div>
-          <div className="input-group">
-            <label className="input-label">Harga Total (Rp)</label>
-            <input className="input" disabled value={item.finalPrice.toLocaleString()} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+
 
 export default function CreateGOPage() {
   const { user, profile } = useAuth()
