@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
 import BottomNav from '../components/BottomNav'
-import { Bell, Check } from 'lucide-react'
+import { Bell, Check, Trash2 } from 'lucide-react'
 
 export default function NotificationsPage() {
   const { user } = useAuth()
@@ -37,6 +37,17 @@ export default function NotificationsPage() {
     await batch.commit()
   }
 
+  async function deleteNotif(id) {
+    // We cannot use delete in batch easily if we just delete directly, but we can do a simple fetch. 
+    // Actually, deleteDoc is best.
+    try {
+      const { deleteDoc } = await import('firebase/firestore')
+      await deleteDoc(doc(db, 'notifications', user.uid, 'items', id))
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const unreadCount = notifs.filter(n => !n.read).length
 
   return (
@@ -60,7 +71,7 @@ export default function NotificationsPage() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {notifs.map(n => <NotifItem key={n.id} notif={n} navigate={navigate} />)}
+            {notifs.map(n => <NotifItem key={n.id} notif={n} navigate={navigate} onDelete={() => deleteNotif(n.id)} />)}
           </div>
         )}
       </div>
@@ -80,7 +91,7 @@ const TYPE_ICONS = {
   cancelled:     '🚫',
 }
 
-function NotifItem({ notif, navigate }) {
+function NotifItem({ notif, navigate, onDelete }) {
   const date = notif.createdAt?.toDate ? notif.createdAt.toDate() : new Date()
 
   return (
@@ -89,11 +100,17 @@ function NotifItem({ notif, navigate }) {
       style={{
         background: notif.read ? 'var(--color-bg)' : 'var(--color-primary-light)',
         borderColor: notif.read ? 'var(--color-border)' : 'var(--color-primary-subtle)',
-        cursor: notif.goId ? 'pointer' : 'default',
+        position: 'relative'
       }}
-      onClick={() => notif.goId && navigate(`/go/${notif.goId}`)}
     >
-      <div className="flex gap-3">
+      <button 
+        onClick={(e) => { e.stopPropagation(); onDelete() }}
+        style={{ position: 'absolute', top: 8, right: 8, color: 'var(--color-text-disabled)', padding: 4 }}
+      >
+        <Trash2 size={14} />
+      </button>
+
+      <div className="flex gap-3" style={{ cursor: notif.goId ? 'pointer' : 'default', paddingRight: 20 }} onClick={() => notif.goId && navigate(`/go/${notif.goId}`)}>
         <div style={{ fontSize: '1.25rem', flexShrink: 0, lineHeight: 1.5 }}>
           {TYPE_ICONS[notif.type] || '🔔'}
         </div>
