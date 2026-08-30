@@ -90,7 +90,7 @@ export default function NotificationsPage() {
       }
 
       // Register firebase SW dan tunggu sampai aktif
-      const fbReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+      const fbReg = await navigator.serviceWorker.register('/sw.js')
       const activeReg = await new Promise((resolve) => {
         if (fbReg.active) {
           resolve(fbReg)

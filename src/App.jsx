@@ -51,7 +51,7 @@ function AutoFCMRegister() {
         const messaging = await getMessagingInstance()
         if (!messaging) return
 
-        const fbReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        const fbReg = await navigator.serviceWorker.register('/sw.js')
         // Wait for SW to be active with 3s timeout
         await new Promise((resolve) => {
           if (fbReg.active) { resolve(); return }
