@@ -46,7 +46,7 @@ export default function BottomNav() {
           {badge > 0 && (
             <span style={{
               position: 'absolute', top: 6, right: 20, 
-              width: 8, height: 8, borderRadius: '50%', background: 'var(--color-error)'
+              width: 8, height: 8, borderRadius: '50%', background: 'var(--color-danger)'
             }} />
           )}
           <span>{label}</span>

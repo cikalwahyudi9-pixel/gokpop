@@ -92,7 +92,7 @@ export default function ExplorePage() {
               {cart.length > 0 && (
                 <span style={{
                   position: 'absolute', top: 0, right: 0, 
-                  background: 'var(--color-error)', color: '#fff', 
+                  background: 'var(--color-danger)', color: '#fff', 
                   fontSize: 10, fontWeight: 700, padding: '2px 4px', borderRadius: 8,
                   lineHeight: 1
                 }}>{cart.length}</span>
