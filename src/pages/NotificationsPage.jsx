@@ -16,7 +16,9 @@ export default function NotificationsPage() {
 
   const [notifs, setNotifs] = useState([])
   const [loading, setLoading] = useState(true)
-  const [fcmEnabled, setFcmEnabled] = useState(false)
+  const [fcmEnabled, setFcmEnabled] = useState(
+    typeof Notification !== 'undefined' && Notification.permission === 'granted'
+  )
   const [fcmLoading, setFcmLoading] = useState(false)
 
   useEffect(() => {
