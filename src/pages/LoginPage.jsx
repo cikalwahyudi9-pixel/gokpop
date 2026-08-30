@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { LanguageToggle } from '../components/ui'
-import { ShieldCheck, Bell, TrendingUp } from 'lucide-react'
+
 
 export default function LoginPage() {
   const { signInWithGoogle } = useAuth()
@@ -29,11 +29,6 @@ export default function LoginPage() {
     }
   }
 
-  const features = [
-    { icon: TrendingUp, text: t('realtime_tracking') },
-    { icon: Bell,       text: t('auto_notif') },
-    { icon: ShieldCheck, text: t('anti_scam') },
-  ]
 
   return (
     <div style={{
@@ -168,21 +163,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Feature highlights */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-around',
-        paddingBottom: 'var(--space-6)',
-        borderTop: '1px solid var(--color-border)',
-        paddingTop: 'var(--space-5)',
-      }}>
-        {features.map(({ icon: Icon, text }) => (
-          <div key={text} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)' }}>
-            <Icon size={18} style={{ color: 'var(--color-primary)' }} />
-            <span className="text-xs text-secondary" style={{ textAlign: 'center', maxWidth: 80 }}>{text}</span>
-          </div>
-        ))}
-      </div>
+
     </div>
   )
 }
