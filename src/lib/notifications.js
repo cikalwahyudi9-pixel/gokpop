@@ -36,7 +36,14 @@ export async function createNotification(userId, payload) {
             body: payload.body,
             goId: payload.goId
           })
-        }).catch(err => console.error('Failed to trigger push API:', err))
+        })
+        .then(async (res) => {
+          if (!res.ok) {
+            const err = await res.json()
+            alert(`[DEBUG] Push API Error: ${err.error || res.statusText}`)
+          }
+        })
+        .catch(err => alert(`[DEBUG] Push API Fetch Failed: ${err.message}`))
       }
     }
   } catch (error) {
