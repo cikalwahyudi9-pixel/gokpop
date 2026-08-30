@@ -14,7 +14,19 @@ export default function BottomNav() {
   useEffect(() => {
     if (!user) return
     const q = query(collection(db, 'notifications', user.uid, 'items'), where('read', '==', false))
-    const unsub = onSnapshot(q, snap => setUnreadCount(snap.docs.length))
+    const unsub = onSnapshot(q, snap => {
+      const count = snap.docs.length
+      setUnreadCount(count)
+      
+      // Update PWA OS icon badge if supported
+      if ('setAppBadge' in navigator) {
+        if (count > 0) {
+          navigator.setAppBadge(count).catch(console.error)
+        } else {
+          navigator.clearAppBadge().catch(console.error)
+        }
+      }
+    })
     return unsub
   }, [user])
 
