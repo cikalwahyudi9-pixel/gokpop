@@ -3,5 +3,7 @@
 // Pengguna lain yang login dengan email selain ini hanya akan menjadi Peserta (Customer).
 
 export const ADMIN_EMAILS = [
-  'admin@gokpop.com', // Ganti dengan email Google Anda
+  'admin@gokpop.com',
+  'sagaraosborn13@gmail.com', 
+  'alfahriaji9@gmail.com'// Ganti dengan email Google Anda
 ]
